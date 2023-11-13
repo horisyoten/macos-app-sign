@@ -29,7 +29,7 @@ program
     .requiredOption('--sign <value>', 'use key chain string', )
     .requiredOption('--entitlements <value>', 'entitlements plist file path', )
     .option('--primary-bundle-id <value>', '', )
-    .option('--key-id <value>', 'use key chain name 10alphanumeric', )
+    .option('--team-id <value>', 'use team id 10alphanumeric', )
     .option('--user <value>', 'Apple account user mail address', )
     .option('--password <value>', 'Application password', )
     .option('--altool <value>', 'Use altool', )
