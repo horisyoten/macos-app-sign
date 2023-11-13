@@ -29,21 +29,23 @@ program
     .requiredOption('--sign <value>', 'use key chain string', )
     .requiredOption('--entitlements <value>', 'entitlements plist file path', )
     .option('--primary-bundle-id <value>', '', )
+    .option('--key-id <value>', 'use key chain name 10alphanumeric', )
     .option('--user <value>', 'Apple account user mail address', )
     .option('--password <value>', 'Application password', )
+    .option('--altool <value>', 'Use altool', )
 
 program
     .parse(process.argv);
 
 const options = program.opts();
 
-// 
+//
 if( !fs.statSync( options.app ).isDirectory() ) {
     console.error( `${options.app}` );
     process.exit( 1 );
 }
 
-//　
+//
 glob( `${options.app}/**/*`, async ( err, matches ) => {
 
     let signAppList = [];
@@ -54,9 +56,9 @@ glob( `${options.app}/**/*`, async ( err, matches ) => {
 
         const stat = fs.statSync( matche );
 
-        //　
-        if( stat.isDirectory() ){ 
-            if( 
+        //
+        if( stat.isDirectory() ){
+            if(
                     matche.substr( matche.length - 4 ) === '.app' // directory名が .app で終わる
                 &&  fs.existsSync( `${matche}/Contents/MacOS` ) === true // 指定のディレクトリが存在している
                 &&  fs.statSync( `${matche}/Contents/MacOS` ).isDirectory() === true
@@ -69,9 +71,9 @@ glob( `${options.app}/**/*`, async ( err, matches ) => {
         // ファイルの先頭8バイトチェック UnixBinと思われるもの
         const fileData = fs.readFileSync( matche, { encoding: "hex" } );
         const macOHeader = fileData.substr(0,8).toUpperCase();
-        if( 
-                macOHeader === "CFFAEDFE" 
-            ||  macOHeader === "CAFEBABE" 
+        if(
+                macOHeader === "CFFAEDFE"
+            ||  macOHeader === "CAFEBABE"
         ) {
             signFileList.push( matche );
         }
@@ -91,7 +93,7 @@ glob( `${options.app}/**/*`, async ( err, matches ) => {
         throw new Error("CodesineCheck Error.");
     }
 
-    // dmg 
+    // dmg
     if( options.outputDmg ) {
         // app dmg化
         await Appdmg( options );
@@ -100,7 +102,7 @@ glob( `${options.app}/**/*`, async ( err, matches ) => {
     }
 
     // zip
-    if( options.outputZip ) {   
+    if( options.outputZip ) {
         // app zip化
         await Zip( options );
     }
@@ -109,7 +111,7 @@ glob( `${options.app}/**/*`, async ( err, matches ) => {
     if( options.primaryBundleId && options.user && options.password ) {
         await XcrunNotarize( options );
     } else {
-        console.info("Skip notarize.");    
+        console.info("Skip notarize.");
     }
 
     console.log("Finish.");
@@ -118,7 +120,7 @@ glob( `${options.app}/**/*`, async ( err, matches ) => {
 
 /**
  * 署名
- * @param {string} target 
+ * @param {string} target
  * @param {commander.OptionValues} options
  */
 function Codesign( target, options ) {
@@ -126,11 +128,11 @@ function Codesign( target, options ) {
     console.log( `Codesign: ${target}` );
 
     const result = Spawn('/usr/bin/codesign', [
-        '--deep', 
-        '--options', 'runtime', 
-        '--timestamp', 
-        '-s', options.sign, 
-        '-f', 
+        '--deep',
+        '--options', 'runtime',
+        '--timestamp',
+        '-s', options.sign,
+        '-f',
         '--entitlements', options.entitlements,
         target,
     ]);
@@ -141,14 +143,14 @@ function Codesign( target, options ) {
 
 /**
  * 署名チェック
- * @param {*} targetAppPath 
+ * @param {*} targetAppPath
  */
 function CodesineCheck( targetAppPath ) {
 
     console.log( `CodesineCheck: ${targetAppPath}` );
 
     const result = Spawn('/usr/bin/codesign', [
-        '-vd', 
+        '-vd',
         targetAppPath,
     ]);
 
@@ -165,7 +167,7 @@ function CodesineCheck( targetAppPath ) {
 
 /**
  * Spawnの結果の表示
- * @param {*} result 
+ * @param {*} result
  */
 function SpawnResultOutput( result ) {
 

@@ -4,8 +4,8 @@ exports.Spawn = Spawn;
 
 /**
  * シェル実行
- * @param {*} exec 
- * @param {*} argv 
+ * @param {*} exec
+ * @param {*} argv
  */
  function Spawn( exec, argv ) {
 

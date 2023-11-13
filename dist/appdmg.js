@@ -38,7 +38,7 @@ exports.Appdmg = Appdmg;
             specification = specJson;
         }
 
-        const ee = appdmg({ 
+        const ee = appdmg({
             target: options.outputDmg,
             basepath: targetAppParse.dir,
             specification: specification

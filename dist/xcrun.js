@@ -12,9 +12,9 @@ const WAIT_TIME = IS_DUMMY ? 1000 * 3 : 1000 * 60;
 
 /**
  * 公証処理
- * @param {commander.OptionValues} options 
+ * @param {commander.OptionValues} options
  */
-async function XcrunNotarize( options ) {
+async function XcrunNotarize_altool( options ) {
     return new Promise( async ( resolve, reject ) => {
 
         const isDMG = options.outputDmg ? true : false;
@@ -49,7 +49,7 @@ async function XcrunNotarize( options ) {
  * 公証リクエスト
  * @param {commander.OptionValues} options
  * @param {boolean} isDMG
- * @returns 
+ * @returns
  */
  function XcrunNotarizeRequest( options, isDMG ) {
     return new Promise( async ( resolve, reject ) => {
@@ -57,7 +57,7 @@ async function XcrunNotarize( options ) {
         console.log( `XcrunNotarize request` );
 
         let result;
-        
+
         // 公証
         if( !IS_DUMMY ) {
             result = Spawn('/usr/bin/xcrun', [
@@ -65,7 +65,7 @@ async function XcrunNotarize( options ) {
                 '-t', 'osx',
                 '-f', isDMG ? options.outputDmg : options.outputZip,
                 '--primary-bundle-id', options.primaryBundleId,
-                '-u', options.user, 
+                '-u', options.user,
                 '-p', options.password
             ]);
         } else {
@@ -74,19 +74,19 @@ async function XcrunNotarize( options ) {
                 stdout: `No errors uploading ${isDMG ? options.outputDmg : options.outputZip}.\nRequestUUID = XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX\n`
             };
         }
-        
+
         // コマンド失敗
         if( result.status !== 0 ) {
             reject('XcrunNotarize request command error');
             return;
         }
-        
+
         let ruuidReg = result.stdout.toString().match( /RequestUUID.*?= (.*?)$/m );
         if( !ruuidReg || !ruuidReg[ 1 ] ) {
             reject('XcrunNotarize request UUID error');
             return;
         }
-        
+
         const requestUUID = ruuidReg[1];
         console.log( `XcrunNotarize request success UUID:${requestUUID}` );
 
@@ -97,9 +97,9 @@ async function XcrunNotarize( options ) {
 
 /**
  * 公証が完了するのを待つ
- * @param {commander.OptionValues} options 
- * @param {string} requestUUID 
- * @param {number} count 
+ * @param {commander.OptionValues} options
+ * @param {string} requestUUID
+ * @param {number} count
  */
 async function XcrunNotarizeWait( options, requestUUID, count = 1 ) {
     return new Promise( async ( resolve, reject ) => {
@@ -110,14 +110,14 @@ async function XcrunNotarizeWait( options, requestUUID, count = 1 ) {
             result = Spawn('/usr/bin/xcrun', [
                 'altool', '--notarization-info',
                 requestUUID,
-                '-u', options.user, 
+                '-u', options.user,
                 '-p', options.password
             ]);
         } else {
 
             test = parseInt( Math.random() * 9, 10 );
             //console.debug( test );
-        
+
             result = {
                 status: 0,
                 stdout: `No errors getting notarization info.
@@ -139,7 +139,7 @@ async function XcrunNotarizeWait( options, requestUUID, count = 1 ) {
             return;
         }
 
-        //　戻ってきた情報を取得
+        // 戻ってきた情報を取得
         const resultStr = result.stdout.toString();
         if( !resultStr || resultStr.length < 16/* 適当な長さ 通常出力に検索するまでもない文字数が無い時など */ ){
             reject( 'XcrunNotarizeWait command result error' );
@@ -164,7 +164,7 @@ async function XcrunNotarizeWait( options, requestUUID, count = 1 ) {
         // 公証が失敗
         if( RegExp( `Status: Invalid$`, "m" ).test( resultStr ) || RegExp( `Status Code: [^0]+$`, "m" ).test( resultStr ) ) {
             reject( 'XcrunNotarizeWait sign error' );
-            return;            
+            return;
         }
 
         // 公証が成功
@@ -179,7 +179,7 @@ async function XcrunNotarizeWait( options, requestUUID, count = 1 ) {
             reject( 'XcrunNotarizeWait retry max error' );
             return;
         }
-        
+
         // まだ終わってない?ので再度
         resolve( -1 );
     });
@@ -187,25 +187,21 @@ async function XcrunNotarizeWait( options, requestUUID, count = 1 ) {
 
 /**
  * 公証情報紐付け
- * @param {commander.OptionValues} options 
+ * @param {commander.OptionValues} options
  * @param {boolean} isDMG
  */
 function XcrunNotarizeStaple( options, isDMG ) {
 
     console.log( `XcrunNotarizeStaple` );
 
-    if( !isDMG ) {
-
-        console.info( `\tStapler is incapable of working with ZIP archive files.` );
-        return;
-    }
+    // zipはstapleできないので元のappをstapleする
 
     let result;
 
     if( !IS_DUMMY ){
         result = Spawn('/usr/bin/xcrun', [
-            'stapler', 'staple', 
-            options.outputDmg
+            'stapler', 'staple',
+            isDMG ? options.outputDmg : options.app
         ]);
     } else {
         result = {
@@ -224,13 +220,86 @@ function XcrunNotarizeStaple( options, isDMG ) {
 
 /**
  * sleep
- * @param {number} ms 
- * @returns 
+ * @param {number} ms
+ * @returns
  */
  function Sleep( ms ) {
     return new Promise( async ( resolve ) => {
         setTimeout( () => {
             resolve( );
         }, ms);
+    });
+}
+
+
+/**
+ * 公証処理 (notaryTool版)
+ * @param {commander.OptionValues} options
+ */
+async function XcrunNotarize( options ) {
+    return new Promise( async ( resolve, reject ) => {
+
+        // altoolの指定があればaltoolを使う
+        if( options.altool ) {
+            XcrunNotarize_altool(options);
+            return;
+        }
+
+        const isDMG = options.outputDmg ? true : false;
+
+        // dmg優先
+        const notarizeResult = await XcrunNotaryTool( options, isDMG );
+
+        if( notarizeResult !== 0 ) {
+            reject( "XcrunNotarize failed." );
+            return;
+        }
+
+        // 公証をステープルする
+        XcrunNotarizeStaple( options, isDMG );
+
+        resolve();
+    });
+}
+
+/**
+ * 公証リクエスト
+ * @param {commander.OptionValues} options
+ * @param {boolean} isDMG
+ * @returns
+ */
+ function XcrunNotaryTool( options, isDMG ) {
+    return new Promise( async ( resolve, reject ) => {
+
+        console.log( `XcrunNotaryTool` );
+
+        let result;
+
+        // 公証
+        if( !IS_DUMMY ) {
+            result = Spawn('/usr/bin/xcrun', [
+                'notarytool',
+                'submit', isDMG ? options.outputDmg : options.outputZip,
+                '--apple-id', options.user,
+                '--team-id', options.keyId,
+                '--password', options.password,
+                '--wait'
+            ]);
+        } else {
+            result = {
+                status: 0,
+                stdout: `No errors uploading ${isDMG ? options.outputDmg : options.outputZip}.\nRequestUUID = XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX\n`
+            };
+        }
+
+        // コマンド失敗
+        if( result.status !== 0 ) {
+            reject('XcrunNotarize request command error');
+            return;
+        }
+
+        console.log( `XcrunNotaryTool success` );
+
+        resolve( 0 );
     });
 }

@@ -46,7 +46,7 @@ exports.Zip = Zip;
             reject( err );
             process.chdir( cwd );
             return;
-        } 
+        }
 
         resolve();
 
