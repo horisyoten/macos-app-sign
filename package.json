@@ -13,7 +13,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "appdmg": "github:LinusU/node-appdmg",
+    "appdmg": "github:horisyoten/node-appdmg",
     "commander": "^7.1.0",
     "glob": "^7.1.6"
   }

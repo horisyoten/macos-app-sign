@@ -10,12 +10,12 @@
 
 * ローカルインストール
 <pre>
-npm install git+https://github.com/wan0123/macos-app-sign.git
+npm install git+https://github.com/horisyoten/macos-app-sign.git
 </pre>
 
 * グローバルインストール
 <pre>
-npm install -g git+https://github.com/wan0123/macos-app-sign.git
+npm install -g git+https://github.com/horisyoten/macos-app-sign.git
 </pre>
 
 
@@ -28,8 +28,10 @@ macos-app-sign \
 --sign "[Key Chain Name]" \
 --entitlements "[ent.plist]" \
 --primary-bundle-id "xx.xx.xxxx.xxxxx" \
+--key-id "[group ID]" \
 --user "mac developer mail address" \
---password "Application password"
+--password "Application password" \
+--altool "Use altool notarize"
 </pre>
 
 * appから公証済ZIPを作成する場合
@@ -41,6 +43,8 @@ macos-app-sign \
 --sign "[Key Chain Name]" \
 --entitlements "[ent.plist]" \
 --primary-bundle-id "xx.xx.xxxx.xxxxx" \
+--key-id "[group ID]" \
 --user "mac developer mail address" \
---password "Application password"
+--password "Application password" \
+--altool "Use altool notarize"
 </pre>
