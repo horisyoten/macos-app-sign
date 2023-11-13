@@ -281,7 +281,7 @@ async function XcrunNotarize( options ) {
                 'notarytool',
                 'submit', isDMG ? options.outputDmg : options.outputZip,
                 '--apple-id', options.user,
-                '--team-id', options.teamId,
+                '--team-id', options.keyId,
                 '--password', options.password,
                 '--wait'
             ]);
